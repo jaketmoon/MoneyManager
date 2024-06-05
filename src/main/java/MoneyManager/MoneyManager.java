@@ -70,6 +70,11 @@ class LoginFrame extends JFrame implements ActionListener{
                     PreparedStatement pstmt1 = DBUtil.conn.prepareStatement(sql1);
                     pstmt1.setString(1, name);
                     pstmt1.setString(2, pwd);
+                    //检验密码必须包含数字，字母，以及大于八位
+                    if (pwd.length() < 8 || !pwd.matches(".*[a-zA-Z].*") || !pwd.matches(".*[0-9].*")){
+                        JOptionPane.showMessageDialog(null, "密码必须包含数字，字母，以及大于八位", "警告", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
                     pstmt1.executeUpdate();
                     JOptionPane.showMessageDialog(null, "用户创建成功", "提示", JOptionPane.INFORMATION_MESSAGE);
                     new MainFrame(t_user.getText().trim());
@@ -370,14 +375,16 @@ class ModifyPwdFrame extends JFrame implements ActionListener{
             // 取消修改密码噢
             JOptionPane.showMessageDialog(null,"密码修改取消！", "提示", JOptionPane.INFORMATION_MESSAGE);
             this.dispose();
-        }else if(b_ok==e.getSource()){  //修改密码
+        }else if(b_ok==e.getSource()){
             // 密码修改
             String oldPwd = t_oldPWD.getText().trim();
             String newPwd = t_newPWD.getText().trim();
             String newPwdAgain = t_newPWDAgain.getText().trim();
             if (newPwd.isEmpty()){
                 JOptionPane.showMessageDialog(null,"新密码不能为空！", "警告", JOptionPane.ERROR_MESSAGE);
-            }else if(newPwd.equals(oldPwd)){
+            } else if (newPwd.length() < 8 || !newPwd.matches(".*[a-zA-Z].*") || !newPwd.matches(".*[0-9].*")){
+                JOptionPane.showMessageDialog(null, "密码必须包含数字，字母，以及大于八位", "警告", JOptionPane.ERROR_MESSAGE);
+            } else if(newPwd.equals(oldPwd)){
                 JOptionPane.showMessageDialog(null,"新密码不能与旧密码相同！", "警告", JOptionPane.ERROR_MESSAGE);
             }else if(!newPwd.equals(newPwdAgain)){
                 JOptionPane.showMessageDialog(null,"两次输入的新密码不一致！", "警告", JOptionPane.ERROR_MESSAGE);
@@ -491,26 +498,17 @@ class BalEditFrame extends JFrame implements ActionListener{
         b_select.addActionListener(this);
         b_new.addActionListener(this);
         b_clear.addActionListener(this);
-
-        //添加代码，为table添加鼠标点击事件监听addMouseListener
-//        table.addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                int selectedRow = table.getSelectedRow();
-//                // 在这里添加您希望执行的操作，例如获取选定行的数据或执行其他操作
-//                // 例如，您可以获取选定行的数据并填充到编辑框中
-//                String id = table.getValueAt(selectedRow, 0).toString();
-//                String date = table.getValueAt(selectedRow, 1).toString();
-//                String type = table.getValueAt(selectedRow, 2).toString();
-//                String item = table.getValueAt(selectedRow, 3).toString();
-//                String amount = table.getValueAt(selectedRow, 4).toString();
-//
-//                String sql = "select * from balance where id = ?";
-//                if (id.isEmpty()){
-//                    String sql1 =
-//                }
-//            }
-//        });
+        //键鼠事件
+        table.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent e){
+                int row = table.getSelectedRow();
+                t_id.setText(table.getValueAt(row, 0).toString());
+                t_date.setText(table.getValueAt(row, 1).toString());
+                c_type.setSelectedItem(table.getValueAt(row, 2).toString());
+                c_item.setSelectedItem(table.getValueAt(row, 3).toString());
+                t_bal.setText(table.getValueAt(row, 4).toString());
+            }
+        });
 
         this.setResizable(false);
         this.setSize(800,300);
@@ -548,7 +546,6 @@ class BalEditFrame extends JFrame implements ActionListener{
 
     public void actionPerformed(ActionEvent e) {
         if(b_select==e.getSource()){  //查询所有收支信息
-            //添加代码
             refreshTable();
         }else if(b_update==e.getSource()){  // 修改某条收支信息
             // 根据某一行的编号，修改这一行的数据
@@ -595,7 +592,6 @@ class BalEditFrame extends JFrame implements ActionListener{
                 refreshTable();
             }
         }else if(b_new==e.getSource()){   //新增某条收支信息
-            //添加代码
             String id = t_id.getText().trim();
             String date = t_date.getText().trim();
             String type = c_type.getSelectedItem().toString();
@@ -695,7 +691,7 @@ class DBUtil{
 
         // 创建一个balance表  (编号，日期，类型，内容，金额)
         // 有想过把时间的格式改成时间戳，然后每次用户记录账单的时候，直接用系统时间戳，这样就不用用户输入时间了，但是这个样子用户就会很局限于这个系统的时间，所以还是用用户输入时间吧
-        String sqlB = "create table if not exists balance(id int primary key auto_increment, date datetime, type varchar(20), item varchar(20), money double,username varchar(20))";
+        String sqlB = "create table if not exists balance(id int primary key auto_increment, date date, type varchar(20), item varchar(20), money double,username varchar(20))";
         try {
             stmt.executeUpdate(sqlB);
         } catch (SQLException e) {
